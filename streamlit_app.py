@@ -1,40 +1,40 @@
-import os
-from flask import Flask, render_template, request
-import joblib
+import streamlit as st
 import pandas as pd
+import joblib
+import os
 
-app = Flask(__name__)
+st.title("Titanic Survival Prediction")
 
-MODEL_PATH = os.path.join("model", "titanic_logreg_model.pkl")
-model = joblib.load(MODEL_PATH)
+# Load the model
+model_path = os.path.join("model", "titanic_logreg_model.pkl")
+if not os.path.exists(model_path):
+    st.error("Model file not found: make sure titanic_logreg_model.pkl is in /model")
+else:
+    model = joblib.load(model_path)
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    result = None
-    probability = None
+# Form inputs
+pclass = st.selectbox("Pclass", [1,2,3])
+sex = st.selectbox("Sex", ["male","female"])
+age = st.number_input("Age", min_value=0.0, max_value=100.0, value=30.0)
+sibsp = st.number_input("Siblings/Spouses aboard", min_value=0, max_value=10, value=0)
+fare = st.number_input("Fare", min_value=0.0, max_value=600.0, value=32.0)
 
-    if request.method == "POST":
-        pclass = int(request.form["pclass"])
-        sex = 0 if request.form["sex"] == "male" else 1
-        age = float(request.form["age"])
-        sibsp = int(request.form["sibsp"])
-        fare = float(request.form["fare"])
+if st.button("Predict"):
+    sex_val = 0 if sex == "male" else 1
+    sample = pd.DataFrame([{
+        "Pclass": pclass,
+        "Sex": sex_val,
+        "Age": age,
+        "SibSp": sibsp,
+        "Fare": fare
+    }])
+    pred = model.predict(sample)[0]
+    prob = model.predict_proba(sample)[0][1] if hasattr(model, "predict_proba") else None
 
-        sample = pd.DataFrame([{
-            "Pclass": pclass,
-            "Sex": sex,
-            "Age": age,
-            "SibSp": sibsp,
-            "Fare": fare
-        }])
+    if pred == 1:
+        st.success("Prediction: Survived")
+    else:
+        st.error("Prediction: Did Not Survive")
 
-        pred = model.predict(sample)[0]
-        prob = model.predict_proba(sample)[0][1]
-
-        result = "Survived" if pred == 1 else "Did Not Survive"
-        probability = f"{prob:.2f}"
-
-    return render_template("index.html", result=result, probability=probability)
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    if prob is not None:
+        st.write(f"Survival probability: {prob:.2f}")
