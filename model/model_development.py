@@ -1,30 +1,21 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import classification_report
-import joblib
 import os
 
-df = pd.read_csv("train.csv")
+# Get the folder where this script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
-X = df[["Pclass", "Sex", "Age", "SibSp", "Fare"]]
-y = df["Survived"]
+# Build path to train.csv (assumes it is in the parent folder of this script)
+csv_path = os.path.join(script_dir, "..", "train.csv")
 
-X["Sex"] = X["Sex"].map({"male": 0, "female": 1})
-X["Age"].fillna(X["Age"].median(), inplace=True)
-X["Fare"].fillna(X["Fare"].median(), inplace=True)
+# Read the CSV
+try:
+    df = pd.read_csv(csv_path)
+    print("CSV loaded successfully!")
+except FileNotFoundError:
+    print(f"Error: 'train.csv' not found at {csv_path}")
+    print("Please make sure the file exists in the project folder.")
 
-pipeline = Pipeline([
-    ("scaler", StandardScaler()),
-    ("model", LogisticRegression(max_iter=1000))
-])
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-pipeline.fit(X_train, y_train)
-
-print(classification_report(y_test, pipeline.predict(X_test)))
-
-os.makedirs("model", exist_ok=True)
-joblib.dump(pipeline, "model/titanic_logreg_model.pkl")
+# Continue with your model code...
+# For example:
+# X = df.drop("Survived", axis=1)
+# y = df["Survived"]
